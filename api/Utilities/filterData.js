@@ -32,6 +32,11 @@ export default function filterData(type) {
   }
 
   return (req, res, next) => {
+    // if (req.body.role) {
+    //   return next(
+    //     new AppError("You are not allowed to do this operation", 400)
+    //   );
+    // }
     const filteredBody = {};
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {

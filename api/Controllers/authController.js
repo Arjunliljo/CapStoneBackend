@@ -12,8 +12,12 @@ const generateToken = (id) => {
   return jwt.sign({ id }, KEY);
 };
 
-const sendToken = (newUser, statusCode, res) => {
-  const token = generateToken(newUser._id);
+const sendToken = (newUser, statusCode, res, userId) => {
+  const id = userId ? userId : newUser._id;
+
+  console.log(id === userId);
+
+  const token = generateToken(id);
   if (!token) return next(new AppError("Server failed to create token", 500));
 
   res.cookie("token", token, { httpOnly: true });
@@ -50,7 +54,7 @@ const sellerSignUp = catchAsync(async (req, res, next) => {
   await newSeller.save();
 
   // Send the token
-  sendToken(newSeller, 201, res);
+  sendToken(newSeller, 201, res, newUser._id);
 });
 
 const signUp = catchAsync(async (req, res, next) => {
@@ -97,9 +101,9 @@ const login = catchAsync(async (req, res, next) => {
 
   if (user.role === "seller") {
     const seller = await Seller.findOne({ user: user._id });
-    if (!seller) next(new AppError("Current User is not a Seller", 400));
+    if (!seller) return next(new AppError("Current User is not a Seller", 400));
 
-    sendToken(seller, 200, res);
+    return sendToken(seller, 200, res, user._id);
   }
 
   sendToken(user, 200, res);
@@ -142,16 +146,16 @@ const protect = catchAsync(async (req, res, next) => {
 });
 
 const checkSeller = catchAsync(async (req, res, next) => {
-  //checkSeller middle ware only after the protect middleware because a seller should be a user also the user must have a token before accessing this route protect middleware passing the user based on the token
+  // Ensure protect middleware is used first to set req.user
   const user = req.user;
 
-  //checking the current user is a seller or not;
+  // Check if the current user is a seller
   const seller = await Seller.findOne({ user: user._id });
-
   if (!seller) return next(new AppError("Current User is not a seller", 400));
 
-  //passing the seller to next middleware
+  // Passing the seller to the next middleware
   req.seller = seller;
+  next();
 });
 
 const verifyOtp = catchAsync(async (req, res, next) => {
@@ -171,6 +175,21 @@ const verifyOtp = catchAsync(async (req, res, next) => {
   sendToken(user, 200, res);
 });
 
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    // Check if the user's role is included in the allowed roles
+    if (!roles.includes(req.user.role)) {
+      // If not, pass an error to the next middleware
+      return next(
+        new AppError("You do not have permission to perform this action", 403)
+      );
+    }
+
+    // If the user is authorized, proceed to the next middleware
+    next();
+  };
+};
+
 export default {
   signUp,
   protect,
@@ -179,4 +198,5 @@ export default {
   verifyOtp,
   sellerSignUp,
   checkSeller,
+  authorize,
 };

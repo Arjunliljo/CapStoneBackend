@@ -8,26 +8,41 @@ const router = express.Router();
 router.post("/sign-up", authController.signUp);
 router.post("/login", authController.login);
 router.post("/logout", authController.logout);
+router.patch("/forgot-password", userController.forgotPassword);
+router.patch("/forgot-password/:email/:otp", authController.verifyOtp);
 
 //temporary route for development
 router.delete("/deleteAllUsers", userController.deleteAllUsers);
 
-router.get("/getme", authController.protect, userController.getMe);
+// All routes below this middleware should be protected user must logged in to access these routes
+router.use(authController.protect);
+
+router.get(
+  "/getme",
+  authController.authorize("customer", "seller"),
+  userController.getMe
+);
 router.patch(
   "/update-me",
-  authController.protect,
   filterData("User"),
+  authController.authorize("customer", "seller"),
   userController.updateMe
 );
 router.patch(
   "/reset-my-password",
-  authController.protect,
+  authController.authorize("customer", "seller"),
   filterData("PasswordReset"),
   userController.resetPassword
 );
-router.patch("/forgot-password", userController.forgotPassword);
-router.patch("/forgot-password/:email/:otp", authController.verifyOtp);
-router.patch("/delete-me", authController.protect, userController.deleteMe);
+
+router.patch(
+  "/delete-me",
+  authController.authorize("customer", "seller"),
+  userController.deleteMe
+);
+
+// Below routes only access to the admin
+router.use(authController.authorize("admin"));
 
 router.route("/").get(userController.getAllUsers);
 router

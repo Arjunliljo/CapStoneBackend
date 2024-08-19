@@ -28,7 +28,10 @@ const sellerSchema = mongoose.Schema(
 sellerSchema.pre(/^find/, function (next) {
   this.populate({
     path: "user",
-    select: "-__v -password",
+    select: "name email phone",
+  }).populate({
+    path: "products",
+    select: "-__v",
   });
   next();
 });
