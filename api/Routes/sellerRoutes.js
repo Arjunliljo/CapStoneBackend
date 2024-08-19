@@ -7,21 +7,23 @@ const router = express.Router();
 router.post("/signup", authController.sellerSignUp);
 router.post("/login", authController.login);
 
+router.use(authController.protect);
+
 router.post(
   "/add-product",
-  authController.protect,
   authController.checkSeller,
   sellerController.addProduct
 );
 router.patch(
   "/remove-product/:id",
-  authController.protect,
   authController.checkSeller,
   sellerController.removeProduct
 );
 
-router.route("/").get(sellerController.getAllSellers);
 
+router.route("/").get(authController.authorize('admin'), sellerController.getAllSellers);
+
+router.use(authController.authorize("admin", "seller"));
 router
   .route("/:id")
   .get(sellerController.getSeller)
