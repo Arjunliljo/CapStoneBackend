@@ -4,6 +4,7 @@ import catchAsync from "../Utilities/catchAsync.js";
 import AppError from "../Utilities/appError.js";
 import { otpToPhone } from "../Utilities/otpGenerate.js";
 import Cart from "../Models/cartModel.js";
+import Seller from "../Models/sellerModel.js";
 
 const KEY = process.env.JWT_SECRET;
 
@@ -25,6 +26,32 @@ const sendToken = (newUser, statusCode, res) => {
     },
   });
 };
+
+const sellerSignUp = catchAsync(async (req, res, next) => {
+  const { name, email, password, confirmPassword, phone, shopName } = req.body;
+
+  // Create the seller first
+  const newUser = new User({
+    name,
+    email,
+    password,
+    phone,
+    confirmPassword,
+    role: "seller",
+  });
+
+  const newSeller = new Seller({
+    shopName,
+  });
+
+  newSeller.user = newUser._id;
+
+  await newUser.save();
+  await newSeller.save();
+
+  // Send the token
+  sendToken(newSeller, 201, res);
+});
 
 const signUp = catchAsync(async (req, res, next) => {
   const { name, email, password, confirmPassword, phone } = req.body;
@@ -68,6 +95,13 @@ const login = catchAsync(async (req, res, next) => {
   // restricting password going to frontend
   user.password = undefined;
 
+  if (user.role === "seller") {
+    const seller = await Seller.findOne({ user: user._id });
+    if (!seller) next(new AppError("Current User is not a Seller", 400));
+
+    sendToken(seller, 200, res);
+  }
+
   sendToken(user, 200, res);
 });
 
@@ -107,6 +141,19 @@ const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
+const checkSeller = catchAsync(async (req, res, next) => {
+  //checkSeller middle ware only after the protect middleware because a seller should be a user also the user must have a token before accessing this route protect middleware passing the user based on the token
+  const user = req.user;
+
+  //checking the current user is a seller or not;
+  const seller = await Seller.findOne({ user: user._id });
+
+  if (!seller) return next(new AppError("Current User is not a seller", 400));
+
+  //passing the seller to next middleware
+  req.seller = seller;
+});
+
 const verifyOtp = catchAsync(async (req, res, next) => {
   const { email, otp } = req.params;
   const user = await User.findOne({ email });
@@ -124,4 +171,12 @@ const verifyOtp = catchAsync(async (req, res, next) => {
   sendToken(user, 200, res);
 });
 
-export default { signUp, protect, logout, login, verifyOtp };
+export default {
+  signUp,
+  protect,
+  logout,
+  login,
+  verifyOtp,
+  sellerSignUp,
+  checkSeller,
+};
