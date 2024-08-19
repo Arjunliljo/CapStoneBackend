@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post("/sign-up", authController.signUp);
 router.post("/login", authController.login);
+router.post("/admin-login", authController.loginAsAdmin);
 router.post("/logout", authController.logout);
 router.patch("/forgot-password", userController.forgotPassword);
 router.patch("/forgot-password/:email/:otp", authController.verifyOtp);

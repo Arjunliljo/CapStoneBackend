@@ -15,8 +15,6 @@ const generateToken = (id) => {
 const sendToken = (newUser, statusCode, res, userId) => {
   const id = userId ? userId : newUser._id;
 
-  console.log(id === userId);
-
   const token = generateToken(id);
   if (!token) return next(new AppError("Server failed to create token", 500));
 
@@ -30,6 +28,19 @@ const sendToken = (newUser, statusCode, res, userId) => {
     },
   });
 };
+
+const loginAsAdmin = catchAsync(async (req, res, next) => {
+  const email = "arjun7180@gmail.com";
+  const password = req.body.password;
+
+  const admin = await User.findOne({ email });
+
+  const isPasswordCorrect = admin.checkPassword(password, admin.password);
+
+  if (!isPasswordCorrect) return next(new AppError("Invalid Password", 401));
+
+  sendToken(admin, 200, res);
+});
 
 const sellerSignUp = catchAsync(async (req, res, next) => {
   const { name, email, password, confirmPassword, phone, shopName } = req.body;
@@ -87,14 +98,17 @@ const login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password)
-    return next(new AppError("User must give email and password to login"));
+    return next(
+      new AppError("User must give email and password to login", 400)
+    );
 
   const user = await User.findOne({ email });
   if (!user) return next(new AppError("User did not exist..", 404));
 
   //checking password is matching or not
   const isPasswordCorrect = await user.checkPassword(password, user.password);
-  if (!isPasswordCorrect) return next(new AppError("Incorrect Password.."));
+  if (!isPasswordCorrect)
+    return next(new AppError("Incorrect Password..", 403));
 
   // restricting password going to frontend
   user.password = undefined;
@@ -199,4 +213,5 @@ export default {
   sellerSignUp,
   checkSeller,
   authorize,
+  loginAsAdmin,
 };
