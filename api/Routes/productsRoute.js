@@ -8,12 +8,26 @@ const router = express.Router();
 router
   .route("/")
   .get(productController.getAllProducts)
-  .post(filterData("Product"), productController.createProduct);
+  .post(
+    authController.protect,
+    authController.authorize("admin", "seller"),
+    filterData("Product"),
+    productController.createProduct
+  );
 
 router
   .route("/:id")
   .get(productController.getProduct)
-  .patch(filterData("Product"), productController.updateProduct)
-  .delete(productController.deleteProduct);
+  .patch(
+    authController.protect,
+    authController.authorize("admin", "seller"),
+    filterData("Product"),
+    productController.updateProduct
+  )
+  .delete(
+    authController.protect,
+    authController.authorize("admin", "seller"),
+    productController.deleteProduct
+  );
 
 export default router;

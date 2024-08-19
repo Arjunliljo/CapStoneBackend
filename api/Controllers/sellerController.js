@@ -39,6 +39,36 @@ const addProduct = catchAsync(async (req, res, next) => {
   });
 });
 
+const removeProduct = catchAsync(async (req, res, next) => {
+  const seller = req.seller;
+  const productId = req.params.id;
+
+  if (!productId) return next(new AppError("Please Give the product ID", 400));
+
+  //Checking the current product is sellers or not
+  const isSellersProduct = seller.products.some(
+    (product) => product._id.toString() === productId
+  );
+
+  if (!isSellersProduct)
+    return next(new AppError("This is not the current sellers product", 403));
+
+  const curSeller = await Seller.findById(seller._id);
+  if (!curSeller)
+    return next(new AppError("Current User is not a seller", 401));
+
+  const product = await Product.findByIdAndDelete(productId);
+
+  if (!product)
+    return next(new AppError("Please give a valid product ID", 400));
+
+  res.status(200).json({
+    status: "Success",
+    message: "Successfully deleted the product",
+    product,
+  });
+});
+
 const deleteSeller = catchAsync(async (req, res, next) => {
   // Find the seller by ID
   const seller = await Seller.findById(req.params.id);
@@ -71,4 +101,5 @@ export default {
   updateSeller,
   deleteSeller,
   addProduct,
+  removeProduct,
 };

@@ -4,17 +4,19 @@ import cartController from "../Controllers/cartController.js";
 
 const router = express.Router();
 
-router.get("/get-my-cart", authController.protect, cartController.getMyCart);
+router.use(authController.protect);
+
+router.get("/get-my-cart", cartController.getMyCart);
 router.patch(
   "/add-product-to-cart/:productId",
-  authController.protect,
   cartController.addProductToMyCart
 );
 router.patch(
   "/remove-product-in-cart/:productId",
-  authController.protect,
   cartController.removeProductInCart
 );
+
+router.use(authController.authorize("admin"));
 
 router.route("/").get(cartController.getAllCart);
 router.route("/:id").get(cartController.getCart);

@@ -1,7 +1,10 @@
 import express from "express";
 import couponController from "../Controllers/couponController.js";
+import authController from "../Controllers/authController.js";
 
 const router = express.Router();
+
+router.use(authController.protect, authController.authorize("admin"));
 
 router
   .route("/")

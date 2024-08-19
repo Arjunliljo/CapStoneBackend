@@ -6,11 +6,18 @@ const router = express.Router();
 
 router.post("/signup", authController.sellerSignUp);
 router.post("/login", authController.login);
+
 router.post(
   "/add-product",
   authController.protect,
   authController.checkSeller,
   sellerController.addProduct
+);
+router.patch(
+  "/remove-product/:id",
+  authController.protect,
+  authController.checkSeller,
+  sellerController.removeProduct
 );
 
 router.route("/").get(sellerController.getAllSellers);
